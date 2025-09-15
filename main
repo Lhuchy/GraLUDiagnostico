@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico Interativo de Liderança</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fce5f3 0%, #e8dff5 100%);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .rating-bar {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .rating-segment {
+            flex: 1;
+            height: 20px;
+            background-color: rgba(0,0,0,0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
+        }
+        .rating-segment:hover {
+            transform: scale(1.05);
+            border-color: rgba(0,0,0,0.2);
+        }
+        .rating-bar.hoje .rating-segment.active {
+            background-color: #C084FC; /* Purple */
+        }
+        .rating-bar.gostaria .rating-segment.active {
+            background-color: #FBBF24; /* Gold */
+        }
+        
+        .fade-in { animation: fadeIn 0.8s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app" class="container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
+
+        <header class="text-center mb-10">
+            <img src="logoGL.png" alt="Logo Método Lideração"  class="h-240 sm:h-180 mx-auto sm:mx-0">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">Diagnóstico de Liderança</h1>
+            <p class="mt-2 text-lg text-gray-600">Clique nos blocos para dar sua nota de 1 a 5.</p>
+        </header>
+
+        <main id="questionnaire" class="space-y-5">
+            <!-- Questions will be injected here -->
+        </main>
+
+        <div class="text-center mt-10">
+            <button id="calculateBtn" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg py-3 px-10 rounded-full hover:scale-105 transition-transform duration-300 shadow-lg">
+                Ver meu Diagnóstico
+            </button>
+            <p id="errorMsg" class="text-red-500 font-medium mt-4 h-6"></p>
+        </div>
+
+        <section id="results" class="hidden mt-12 fade-in">
+             <div class="card rounded-2xl shadow-2xl p-6 sm:p-8">
+                 <h2 class="text-3xl font-bold text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">Seu Perfil de Liderança</h2>
+                 <p id="profileTitle" class="text-center text-gray-600 font-semibold text-xl mb-8"></p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 text-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-purple-600">Controle</h3>
+                        <div class="grid grid-cols-3 gap-2 mt-4 bg-purple-50 p-3 rounded-lg">
+                            <div><div class="text-sm text-purple-800">Hoje</div><div id="controlHoje" class="text-3xl font-bold">0</div></div>
+                            <div><div class="text-sm text-purple-800">Gostaria</div><div id="controlGostaria" class="text-3xl font-bold">0</div></div>
+                            <div><div class="text-sm text-purple-800">Gap</div><div id="controlGap" class="text-3xl font-bold">0</div></div>
+                        </div>
+                    </div>
+                     <div>
+                        <h3 class="text-2xl font-bold text-amber-500">Autonomia</h3>
+                        <div class="grid grid-cols-3 gap-2 mt-4 bg-amber-50 p-3 rounded-lg">
+                            <div><div class="text-sm text-amber-800">Hoje</div><div id="autonomyHoje" class="text-3xl font-bold">0</div></div>
+                            <div><div class="text-sm text-amber-800">Gostaria</div><div id="autonomyGostaria" class="text-3xl font-bold">0</div></div>
+                            <div><div class="text-sm text-amber-800">Gap</div><div id="autonomyGap" class="text-3xl font-bold">0</div></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="diagnosis" class="bg-white bg-opacity-80 p-6 rounded-lg leading-relaxed text-gray-700 space-y-4 border border-gray-200 min-h-[200px]">
+                    <!-- Diagnosis text will be injected here -->
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // DEIXE SUA CHAVE DA API DO GEMINI AQUI
+        const apiKey = "AIzaSyCw_VCEPS0c0Vysm64SsFkaSMkFgJvyXpI"; // <--- COLOQUE SUA CHAVE AQUI
+
+        const statements = [
+            { text: 'Dou clareza de objetivos e removo obstáculos para facilitar a entrega de resultados pela equipe.', category: 'autonomy' },
+            { text: 'Estimulo e aproveito ideias de melhoria vindas de qualquer membro da equipe.', category: 'autonomy' },
+            { text: 'Delego tarefas com autonomia quando o alinhamento inicial está claro.', category: 'autonomy' },
+            { text: 'Incluo a equipe nas decisões para aumentar o engajamento e o senso de pertencimento.', category: 'autonomy' },
+            { text: 'Valorizo e incentivo que as pessoas entreguem mais do que é solicitado, mesmo sem retorno imediato.', category: 'autonomy' },
+            { text: 'Acompanho o trabalho da equipe com frequência para garantir que sigam o foco estabelecido.', category: 'control' },
+            { text: 'Reforço regras e faço cobranças firmes quando percebo risco de atrasos ou falhas.', category: 'control' },
+            { text: 'Mantenho a produtividade da equipe principalmente por meio de recompensas ou benefícios.', category: 'control' },
+            { text: 'Defino metas e prazos claros para evitar que o ritmo de trabalho diminua.', category: 'control' },
+            { text: 'Reviso pessoalmente as entregas para confirmar se estão de acordo com o padrão que espero.', category: 'control' },
+        ];
+        
+        // Começa com a pontuação zerada
+        let userAnswers = statements.map(() => ({ hoje: 0, gostaria: 0 }));
+
+        const questionnaireContainer = document.getElementById('questionnaire');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        function renderQuestionnaire() {
+            statements.forEach((stmt, index) => {
+                const card = document.createElement('div');
+                card.className = 'card rounded-2xl shadow-lg p-5';
+
+                const createRatingBar = (type, value) => {
+                    let segments = '';
+                    for (let i = 1; i <= 5; i++) {
+                        segments += `<div class="rating-segment ${i <= value ? 'active' : ''}" data-index="${index}" data-type="${type}" data-value="${i}"></div>`;
+                    }
+                    const color = type === 'hoje' ? 'purple' : 'amber';
+                    return `
+                        <div class="flex items-center gap-4">
+                            <div class="w-24 text-right">
+                                <span class="font-semibold text-${color}-800">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                <div class="font-bold text-2xl text-${color}-600" id="${type}-val-${index}">${value}</div>
+                            </div>
+                            <div class="rating-bar w-full ${type}">${segments}</div>
+                        </div>`;
+                };
+
+                card.innerHTML = `
+                    <p class="font-semibold text-gray-700 mb-4 text-center">${stmt.text}</p>
+                    ${createRatingBar('hoje', userAnswers[index].hoje)}
+                    <div class="h-2"></div>
+                    ${createRatingBar('gostaria', userAnswers[index].gostaria)}
+                `;
+                questionnaireContainer.appendChild(card);
+            });
+
+            questionnaireContainer.addEventListener('click', (e) => {
+                const segment = e.target.closest('.rating-segment');
+                if (!segment) return;
+
+                const index = segment.dataset.index;
+                const type = segment.dataset.type;
+                const value = parseInt(segment.dataset.value);
+
+                userAnswers[index][type] = value;
+                
+                // Update numerical display
+                document.getElementById(`${type}-val-${index}`).textContent = value;
+                
+                // Update visual display
+                const allSegments = questionnaireContainer.querySelectorAll(`.rating-segment[data-index="${index}"][data-type="${type}"]`);
+                allSegments.forEach(seg => {
+                    seg.classList.toggle('active', seg.dataset.value <= value);
+                });
+            });
+        }
+
+        calculateBtn.addEventListener('click', () => {
+            errorMsg.textContent = '';
+            const isComplete = userAnswers.every(answer => answer.hoje > 0 && answer.gostaria > 0);
+            if (!isComplete) {
+                errorMsg.textContent = 'Por favor, preencha todas as afirmações antes de continuar.';
+                return;
+            }
+
+            let scores = {
+                control: { hoje: 0, gostaria: 0 },
+                autonomy: { hoje: 0, gostaria: 0 }
+            };
+
+            statements.forEach((stmt, index) => {
+                const answer = userAnswers[index];
+                scores[stmt.category].hoje += answer.hoje;
+                scores[stmt.category].gostaria += answer.gostaria;
+            });
+            
+            const controlGap = scores.control.gostaria - scores.control.hoje;
+            const autonomyGap = scores.autonomy.gostaria - scores.autonomy.hoje;
+            const gaps = { control: controlGap, autonomy: autonomyGap };
+
+            updateUI(scores, gaps);
+        });
+
+        async function updateUI(scores, gaps) {
+            document.getElementById('controlHoje').textContent = scores.control.hoje;
+            document.getElementById('controlGostaria').textContent = scores.control.gostaria;
+            document.getElementById('controlGap').textContent = gaps.control;
+            
+            document.getElementById('autonomyHoje').textContent = scores.autonomy.hoje;
+            document.getElementById('autonomyGostaria').textContent = scores.autonomy.gostaria;
+            document.getElementById('autonomyGap').textContent = gaps.autonomy;
+
+            document.getElementById('profileTitle').textContent = getProfileTitle(scores, gaps);
+            
+            const resultsSection = document.getElementById('results');
+            resultsSection.classList.remove('hidden');
+            const diagnosisEl = document.getElementById('diagnosis');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+            let loadingInterval;
+            try {
+                const loadingMessages = [
+                    "Analisando seu perfil com a GraLU...",
+                    "Identificando seus superpoderes de liderança...",
+                    "Falta pouco...",
+                    "Em menos de 1 minuto você terá o diagnóstico!",
+                ];
+                let messageIndex = 0;
+
+                diagnosisEl.innerHTML = `
+                    <div class="flex flex-col items-center justify-center min-h-[150px]">
+                        <div class="w-8 h-8 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
+                        <p id="loadingText" class="text-center font-semibold mt-4 text-gray-600">${loadingMessages[messageIndex]}</p>
+                    </div>
+                `;
+
+                const loadingTextEl = document.getElementById('loadingText');
+
+                loadingInterval = setInterval(() => {
+                    messageIndex = (messageIndex + 1) % loadingMessages.length;
+                    loadingTextEl.textContent = loadingMessages[messageIndex];
+                }, 2500);
+
+                const diagnosisText = await generateDiagnosisWithGemini(scores, gaps);
+                
+                clearInterval(loadingInterval);
+
+                // Basic markdown to HTML conversion
+                const formattedText = diagnosisText
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+                diagnosisEl.innerHTML = formattedText;
+
+            } catch (error) {
+                console.error("Erro ao gerar diagnóstico:", error);
+                if(loadingInterval) clearInterval(loadingInterval);
+                diagnosisEl.innerHTML = '<p class="text-red-500 text-center">Ocorreu um erro ao gerar seu diagnóstico. Por favor, tente novamente.</p>';
+            }
+        }
+
+        function getProfileTitle(scores, gaps) {
+             if (scores.autonomy.hoje > 20 && gaps.autonomy >= 0) return 'Líder Inspiradora';
+             if (scores.control.hoje > 20 && gaps.control >= 0) return 'Líder Estrategista';
+             if (scores.autonomy.hoje > 15 && scores.control.hoje > 15) return 'Líder Híbrida';
+             if (gaps.autonomy > 5 && gaps.control > 5) return 'Líder em Transformação';
+             return 'Líder em Desenvolvimento';
+        }
+
+        async function generateDiagnosisWithGemini(scores, gaps) {
+            if (!apiKey) {
+                throw new Error("API key do Gemini não foi configurada.");
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            const systemPrompt = "Você é a GraLu, uma mentora de liderança sênior, especializada em desenvolvimento de líderes. Seu tom é o de uma mentora próxima e parceira: encorajador, perspicaz e direto. A comunicação é leve, moderna e usa emojis para criar conexão (como ✨, 🚀, 🌟). O objetivo é que a pessoa se sinta compreendida e motivada. Use markdown com asteriscos para itálico (*texto*) e asteriscos duplos para negrito (**texto**). Não use títulos ou cabeçalhos. Escreva o texto de forma fluida e contínua.";
+
+            const userQuery = `
+                Analise o seguinte perfil de liderança e forneça um diagnóstico personalizado em português do Brasil, seguindo rigorosamente o modelo de tom e estrutura abaixo.
+
+                **Dados do Perfil:**
+                - **Indicador de Controle:** Hoje=${scores.control.hoje}, Gostaria=${scores.control.gostaria}, Gap=${gaps.control}
+                - **Indicador de Autonomia:** Hoje=${scores.autonomy.hoje}, Gostaria=${scores.autonomy.gostaria}, Gap=${gaps.autonomy}
+
+                **Modelo de Estrutura e Tom (Siga este modelo):**
+
+                **1. Abertura Positiva:** Comece reconhecendo uma força com base nos dados "Hoje". Exemplo: "Você já tem **muita autonomia na sua liderança** – coisas como “estimulo ideias de melhoria” e “incluo a equipe nas decisões” provam que você valoriza participação e protagonismo de verdade."
+
+                **2. Análise do Gap:** Comente sobre os "gaps" de forma positiva. Exemplo: "Seu **controle é na medida, sem sufocar**, e seus **gaps são bem pequenos**. Isso quer dizer que você já lidera quase do jeitinho que acredita ser o ideal. ✨"
+
+                **3. Pontos de Ação:** Introduza os pontos de melhoria de forma conversacional. Exemplo: "Agora… tem uns pontinhos que, se a gente afinar, vão te levar pra um outro nível:"
+                Liste 2 ou 3 pontos de ação práticos e específicos em formato de lista com asteriscos. Exemplo:
+                * *Soltar mais o controle* onde a equipe já está madura, deixando o acompanhamento mais por resultado do que por processo.
+                * *Dar ainda mais protagonismo* em tarefas importantes, confiando 100% no alinhamento inicial.
+                * *Trocar a motivação só por recompensa* por gatilhos mais internos, que inspirem de verdade.
+
+                **4. Chamada para Ação (Mentoria GraLu):** Conecte os pontos de ação diretamente à mentoria. Exemplo: "E é aí que a **Mentoria GraLu** entra pra te impulsionar 🚀"
+                Mencione os benefícios específicos da mentoria. Exemplo: "Com o *Mapa de Delegação* e o *Kit Follow Up de Feedbacks*, você vai acompanhar menos e confiar mais — sem perder a qualidade. Com o seu *DNA da Líder*, vai receber uma devolutiva só sua, revelando seus gatilhos, potenciais e pontos cegos."
+
+                **5. Encerramento:** Termine com uma pergunta encorajadora. Exemplo: "Bora fazer essa virada juntas? 🌟"
+
+                **Agora, gere o diagnóstico para os dados do perfil fornecidos, aplicando este modelo.**
+            `;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.json();
+                console.error("API Error:", errorBody);
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.candidates[0].content.parts[0].text;
+        }
+
+        renderQuestionnaire();
+    });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
