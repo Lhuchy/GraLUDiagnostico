@@ -55,7 +55,7 @@
     <div id="app" class="container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
 
         <header class="text-center mb-10">
-            <img src="logoGL.png" alt="Logo Método Lideração"  class="h-240 sm:h-180 mx-auto sm:mx-0">
+              <img src="logoGL.png" alt="Logo Método Lideração" class="h-64 mx-auto">
             <h1 class="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">Diagnóstico de Liderança</h1>
             <p class="mt-2 text-lg text-gray-600">Clique nos blocos para dar sua nota de 1 a 5.</p>
         </header>
@@ -106,7 +106,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // DEIXE SUA CHAVE DA API DO GEMINI AQUI
-        const apiKey = "AIzaSyCw_VCEPS0c0Vysm64SsFkaSMkFgJvyXpI"; // <--- COLOQUE SUA CHAVE AQUI
+        const apiKey = ""; // <--- COLOQUE SUA CHAVE AQUI
 
         const statements = [
             { text: 'Dou clareza de objetivos e removo obstáculos para facilitar a entrega de resultados pela equipe.', category: 'autonomy' },
@@ -252,6 +252,7 @@
                 // Basic markdown to HTML conversion
                 const formattedText = diagnosisText
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
                     .replace(/\n/g, '<br>');
                 diagnosisEl.innerHTML = formattedText;
 
@@ -332,9 +333,4 @@
     </script>
 </body>
 </html>
-
-
-
-
-
 
